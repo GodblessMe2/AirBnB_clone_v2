@@ -1,88 +1,40 @@
-# AirBnB clone web server setup and configuration
+# Pupper manifet to redoo ejer 0
 
-# STILL WORKING ON THIS SCRIPT---
-$nginx_conf = "server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    add_header X-Served-By ${hostname};
-    root   /var/www/html;
-    index  index.html index.htm;
-    location /hbnb_static {
-        alias /data/web_static/current;
-        index index.html index.htm;
-    }
-    location /redirect_me {
-        return 301 http://facebook.com/printolab/;
-    }
-    error_page 404 /404.html;
-    location /404 {
-      root /var/www/html;
-      internal;
-    }
-}"
-
-package { 'nginx':
-  ensure   => 'present',
-  provider => 'apt'
+exec { 'update':
+  command => '/usr/bin/apt-get update',
 }
 
--> file { '/data':
-  ensure  => 'directory'
+-> package { 'nginx':
+  ensure  => installed,
 }
 
--> file { '/data/web_static':
-  ensure => 'directory'
-}
-
--> file { '/data/web_static/releases':
-  ensure => 'directory'
-}
-
--> file { '/data/web_static/releases/test':
-  ensure => 'directory'
-}
-
--> file { '/data/web_static/shared':
-  ensure => 'directory'
+-> file { ['/data/', '/data/web_static/', '/data/web_static/releases/', '/data/web_static/releases/test', '/data/web_static/shared' ]:
+  ensure => 'directory',
+  owner  => 'ubuntu',
+  group  => 'ubuntu',
 }
 
 -> file { '/data/web_static/releases/test/index.html':
-  ensure  => 'present',
-  content => "this webpage is found in data/web_static/releases/test/index.htm \n"
+  content => 'test page',
+  owner   => 'ubuntu',
+  group   => 'ubuntu',
 }
 
 -> file { '/data/web_static/current':
   ensure => 'link',
-  target => '/data/web_static/releases/test'
+  target => '/data/web_static/releases/test/',
+  force  => yes,
+  owner  => 'ubuntu',
+  group  => 'ubuntu',
 }
 
--> exec { 'chown -R ubuntu:ubuntu /data/':
-  path => '/usr/bin/:/usr/local/bin/:/bin/'
+-> exec { 'sed':
+  command => '/usr/bin/env sed -i "/listen 80 default_server/a location \
+/hbnb_static/ { alias /data/web_static/current/;}" \
+/etc/nginx/sites-available/default',
 }
 
-file { '/var/www':
-  ensure => 'directory'
-}
-
--> file { '/var/www/html':
-  ensure => 'directory'
-}
-
--> file { '/var/www/html/index.html':
-  ensure  => 'present',
-  content => "This is my first upload  in /var/www/index.html***\n"
-}
-
--> file { '/var/www/html/404.html':
-  ensure  => 'present',
-  content => "Ceci n'est pas une page - Error page\n"
-}
-
--> file { '/etc/nginx/sites-available/default':
-  ensure  => 'present',
-  content => $nginx_conf
-}
-
--> exec { 'nginx restart':
-  path => '/etc/init.d/'
+-> service { 'nginx':
+  ensure  => running,
+  require => Package['nginx'],
 }
